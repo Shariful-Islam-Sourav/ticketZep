@@ -14,6 +14,12 @@ const app = express();
 connectDB();
 
 app.use(cors());
+
+app.use(
+  "/api/orders/webhook",
+  express.raw({ type: "application/json" })
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

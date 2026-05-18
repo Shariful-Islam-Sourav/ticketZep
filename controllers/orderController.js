@@ -99,3 +99,54 @@ export const createCheckoutSession = async (req, res) => {
     });
   }
 };
+
+export const stripeWebhook = async (req, res) => {
+  console.log("Webhook received");
+  let event;
+
+  try {
+    const signature = req.headers["stripe-signature"];
+
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+  } catch (error) {
+    return res.status(400).send(
+      `Webhook Error: ${error.message}`
+    );
+  }
+
+  if (event.type === "checkout.session.completed") {
+
+    const session = event.data.object;
+
+    const order = await Order.findOne({
+      stripeSessionId: session.id,
+    });
+
+    if (order) {
+
+      if (order.paymentStatus !== "paid") {
+
+        order.paymentStatus = "paid";
+        await order.save();
+
+        const eventData = await Event.findById(order.eventId);
+
+        if (eventData) {
+          eventData.availableTickets -= order.quantity;
+          await eventData.save();
+        }
+
+        console.log("Payment confirmed:", order._id);
+      }
+    }
+  }
+
+  res.status(200).json({
+    received: true,
+  });
+};

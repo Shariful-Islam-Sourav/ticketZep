@@ -1,6 +1,6 @@
 import express from "express";
 
-import { createOrder, createCheckoutSession } from "../controllers/orderController.js";
+import { createOrder, createCheckoutSession, stripeWebhook } from "../controllers/orderController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -12,5 +12,6 @@ router.post(
   protect,
   createCheckoutSession
 );
+router.post("/webhook", stripeWebhook);
 
 export default router;
